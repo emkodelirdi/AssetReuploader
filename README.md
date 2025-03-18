@@ -32,6 +32,8 @@ The node.js program works in 3 phases
 The roblox plugin then replaces all occurrences of those assetIDs in the game with the new ones!
 
 
+- ### If any assets were moderated, it'll spit them out into a folder in the workspace for you so you can handle their reuploads manually if need be
+
 # Setup
 
 - Head over to releases and grab the latest release https://github.com/TylerAtStarboard/ImageReuploader/releases/
