@@ -77,7 +77,9 @@ The roblox plugin then replaces all occurrences of those assetIDs in the game wi
 So relax and grab a coffee!
 
 - This is the first real distributed tool/software I've ever made. It was a quick tool made for my studio that I decided to share with you all.
-- (so there might be issues and I'm a busy person working on my games so I might not be able to maintain this very quickly)
+  - This means a few things:
+    - There might be issues and I'm a busy person working on my games so I might not be able to maintain this very quickly
+    - The code is kinda fugly, I hate making plugins and do it out of necessity :D
 
 
 
