@@ -30,6 +30,7 @@ https://github.com/user-attachments/assets/47a66f54-7623-4470-8756-56a91d60fa09
 https://github.com/user-attachments/assets/8efea7c3-4422-44c6-ba02-7ea957f67820
 
 
+# How to Use
 
 When you hit search, it'll search for all assets under the selected instance or the datamodel(depending on your setting) that contains one of the selected content properties
 
@@ -58,8 +59,11 @@ The roblox plugin then replaces all occurrences of those assetIDs in the game wi
 
 - Head over to releases and grab the latest release https://github.com/TylerAtStarboard/ImageReuploader/releases/
   
-- Drag ImageReuploader.rbxmx into a studio place, and right click -> Save as Local Plugin
+- Drag AssetReuploader.rbxmx into a studio place, and right click -> Save as Local Plugin
   ![image](https://github.com/user-attachments/assets/4d0701e8-90d8-4c12-8566-987ebf38eeee)
+
+
+## If you want to reupload image assets:
 
 - Head to the Creator Dashboard https://create.roblox.com/dashboard/
 
@@ -78,8 +82,6 @@ The roblox plugin then replaces all occurrences of those assetIDs in the game wi
   ![image](https://github.com/user-attachments/assets/55105aff-a8a2-48c5-93ae-6bc271f56e6d)
 
 - Make sure this is the correct API key for the group you have selected, or for your profile if Upload To Group is turned off
-
-- Run ImageUploader.exe to start the program, and then you're good to go!
 
 ![image](https://github.com/user-attachments/assets/a4b8bc18-fbce-4574-bd1f-602a1526a688)
 
