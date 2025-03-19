@@ -103,5 +103,6 @@ So relax and grab a coffee!
     - There might be issues and I'm a busy person working on my games so I might not be able to maintain this very quickly
     - The code is kinda fugly, I hate making plugins and do it out of necessity :D
 
+- Special thanks to https://crates.io/crates/rbx_cookie for making uploading animations easier
 
 
