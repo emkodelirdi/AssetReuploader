@@ -1,11 +1,11 @@
 {
-    "name": "image-reuploader",
+    "name": "asset-reuploader",
     "version": "1.0.0",
-    "description": "A Node.js tool for reuploading and replacing images through Roblox's Open Cloud, with moderation checks.",
+    "description": "A Node.js tool for reuploading and replacing assets through Roblox's Open Cloud",
     "main": "src.js",
     "scripts": {
         "start": "node src.js",
-        "build-exe": "pkg src.js --targets node16-win-x64 --output ImageUploader.exe"
+        "build-exe": "pkg src.js --targets node16-win-x64 --output AssetReuploader.exe"
     },
     "dependencies": {
         "follow-redirects": "^1.15.2",
