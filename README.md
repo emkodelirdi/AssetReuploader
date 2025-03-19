@@ -33,6 +33,7 @@ https://github.com/user-attachments/assets/8efea7c3-4422-44c6-ba02-7ea957f67820
 # How to Use
 
 When you hit search, it'll search for all assets under the selected instance or the datamodel(depending on your setting) that contains one of the selected content properties
+(only relevant for image uploads)
 
 ![image](https://github.com/user-attachments/assets/e3a6f01b-2d3c-4bfb-87ba-30468a9b13ed)
 
