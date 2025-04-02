@@ -1,8 +1,9 @@
 # AssetReuploader
+## Latest release has mesh and animation support!
 
 Do you: 
 
-- Want to easily move all of your animations or image assets from one group/profile to another?
+- Want to easily move all of your animations meshes or image assets from one group/profile to another?
 - Have a lot of free marketplace image assets that you don't own and you want to use EditableImage?
 
 ## AssetReuploader is a simple Node.js tool for reuploading and replacing assets in your game through Roblox's Open Cloud. 
@@ -13,7 +14,7 @@ Do you:
 https://github.com/user-attachments/assets/d79b3754-bd43-4e3f-adf7-7a13f5cfebe7
 
 
-# v2.0 now with animation support!
+# v2.0 now with animation support
 
 ![RobloxStudioBeta_3pLc5RQYHP](https://github.com/user-attachments/assets/16bd7c71-eb58-4ba0-b01a-3cd9dec70917)
 
