@@ -19,7 +19,6 @@ function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// If user didn't supply a cookie for animations, call rbx_cookie.exe
 function getCookieFromRustCLI() {
     const baseDir = process.pkg ? path.dirname(process.execPath) : __dirname;
     const cookieExePath = path.join(baseDir, "rbx_cookie.exe");
@@ -135,8 +134,6 @@ async function actuallyUploadAnimation(
     return assetId;
 }
 
-
-// Basic download function
 async function downloadAssetLegacy(assetId, outputPath) {
     return new Promise((resolve, reject) => {
         console.log(`[downloadAssetLegacy] assetId=${assetId} -> ${outputPath}`);
@@ -180,39 +177,31 @@ async function downloadAssetLegacy(assetId, outputPath) {
     });
 }
 
-
 async function downloadAssetLegacyWithRetries(assetId, outputPath) {
     const maxRetries = 10;
     let attempt = 0;
     while (attempt < maxRetries) {
         try {
             await downloadAssetLegacy(assetId, outputPath);
-            // success => we're done
             return;
         } catch (err) {
             attempt++;
-            // If the error message indicates 429 or "Too Many Requests," we retry
             if (err.message.includes("429") || err.message.toLowerCase().includes("rate limit")) {
                 console.warn(`[downloadAssetLegacyWithRetries] 429 or rate-limit for asset ${assetId}, attempt ${attempt}`);
                 if (attempt < maxRetries) {
-                    // wait 1s before next attempt
                     await sleep(1000);
                 } else {
-                    // final failure
                     throw err;
                 }
             } else {
-                // Some other error => fail out immediately
                 throw err;
             }
         } finally {
-            // Always limit the overall rate to about 5/s
             await sleep(200);
         }
     }
 }
 
-// Poll operation for async Open Cloud
 async function pollOperationUntilDone(operationId, apiKey) {
     const baseUrl = "https://apis.roblox.com/assets/v1/operations/";
     while (true) {
@@ -293,7 +282,6 @@ async function getAssetModeration(assetId, apiKey) {
     return data.moderationResult || null;
 }
 
-// Prepare output folder
 function prepareOutputDir(dir) {
     for (let attempt = 1; attempt <= 5; attempt++) {
         try {
@@ -315,7 +303,6 @@ function prepareOutputDir(dir) {
     }
 }
 
-
 async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
     const jobInfo = jobs[jobId];
     if (!jobInfo) {
@@ -325,10 +312,8 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
     try {
         console.log(`[runJobImages] Starting job ${jobId} with ${assetIDs.length} assets.`);
 
-        // 1) Clear and recreate outputDir with retries
         prepareOutputDir(outputDir);
 
-        // Setup tracking arrays
         jobInfo.failures = [];
         jobInfo.moderated = [];
         jobInfo.results = [];
@@ -336,7 +321,6 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
         jobInfo.done = 0;
         jobInfo.message = "Starting downloads...";
 
-        // 2) Download each asset with 5/s + 429-retry
         const downloaded = [];
         let downloadedCount = 0;
 
@@ -384,7 +368,6 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
         for (let i = 0; i < downloaded.length; i += 60) {
             const slice = downloaded.slice(i, i + 60);
 
-            // Step 4.1: Create assets
             const newlyCreated = [];
             for (const item of slice) {
                 uploadedCount++;
@@ -428,7 +411,6 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
                 jobInfo.message = `${uploadedCount}/${totalToUpload} uploaded`;
             }
 
-            // Step 4.2: Check moderation for each new asset in the 60-chunk
             let moderationCount = 0;
             for (let mIndex = 0; mIndex < newlyCreated.length; mIndex++) {
                 const entry = newlyCreated[mIndex];
@@ -472,7 +454,6 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
                 }
             }
 
-            // After finishing this batch, wait 60s if more remain
             if (i + 60 < downloaded.length) {
                 jobInfo.message = "Waiting...";
                 console.log("[runJobImages] Upload+moderation batch done. Sleeping 60s...");
@@ -494,11 +475,10 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
 
     } catch (err) {
         console.error(`[runJobImages] Fatal error in job ${jobId}:`, err);
-        jobInfo.message = `Fatal error: ${err.message}`;
-        jobInfo.finished = true;
+        jobs[jobId].message = `Fatal error: ${err.message}`;
+        jobs[jobId].finished = true;
     }
 }
-
 
 async function runJobAnimations(jobId, assetIDs, creatorID, isGroup, apiKey, cookie) {
     const jobInfo = jobs[jobId];
@@ -527,7 +507,6 @@ async function runJobAnimations(jobId, assetIDs, creatorID, isGroup, apiKey, coo
             console.log(`[runJobAnimations] Retrieved cookie from Rust CLI: ${cookie}`);
         }
 
-        // 1) Download in 60-chunks , each asset uses 5/s + 429 retry
         let downloadedCount = 0;
         const downloaded = [];
 
@@ -566,7 +545,6 @@ async function runJobAnimations(jobId, assetIDs, creatorID, isGroup, apiKey, coo
             }
         }
 
-        // 2) Upload in 60-chunks
         jobInfo.done = 0;
         jobInfo.message = "Starting animation uploads...";
         let uploadedCount = 0;
@@ -604,7 +582,6 @@ async function runJobAnimations(jobId, assetIDs, creatorID, isGroup, apiKey, coo
                     continue;
                 }
 
-                // For animations, we skip moderation checks
                 jobInfo.results.push({
                     oldId: item.oldId,
                     newId: `rbxassetid://${newAssetId}`
@@ -613,7 +590,6 @@ async function runJobAnimations(jobId, assetIDs, creatorID, isGroup, apiKey, coo
                 jobInfo.done = uploadedCount;
                 jobInfo.message = `${uploadedCount}/${downloaded.length} uploaded (animation)`;
             }
-            // no 60s wait in-between animation uploads
         }
 
         let msg = `${jobInfo.results.length} assets have been reuploaded.`;
@@ -632,6 +608,178 @@ Failures: ${jobInfo.failures.length}`);
 }
 
 
+async function getMeshCsrfToken(url, cookie) {
+    const res = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Cookie": cookie,
+            "Content-Type": "application/octet-stream",
+            "Requester": "Client"
+        },
+        body: ""
+    });
+    const token = res.headers.get("x-csrf-token");
+    if (!token) {
+        throw new Error("Failed to retrieve x-csrf-token for mesh upload");
+    }
+    return token;
+}
+
+async function uploadMesh(filePath, cookie, creatorID, isGroup) {
+    const baseUrl = "https://data.roblox.com/ide/publish/UploadNewMesh";
+    const url = new URL(baseUrl);
+    url.searchParams.set("name", "RenderMesh");
+    url.searchParams.set("description", "RenderMesh");
+    url.searchParams.set("isPublic", "False");
+    url.searchParams.set("genreTypeId", "1");
+    url.searchParams.set("allowComments", "False");
+    if (isGroup) {
+        url.searchParams.set("groupId", creatorID);
+    }
+    
+    const meshCsrfToken = await getMeshCsrfToken(url.toString(), cookie);
+
+    const fileStream = fs.createReadStream(filePath);
+    const resp = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+            "Cookie": cookie,
+            "User-Agent": "RobloxStudio/WinInet",
+            "x-csrf-token": meshCsrfToken
+        },
+        body: fileStream
+    });
+    if (!resp.ok) {
+        const errorText = await resp.text();
+        throw new Error(`Mesh upload failed (status ${resp.status}): ${errorText}`);
+    }
+    const text = (await resp.text()).trim();
+    const assetId = parseInt(text, 10);
+    if (isNaN(assetId)) {
+        throw new Error(`Mesh upload returned invalid assetId: ${text}`);
+    }
+    return assetId;
+}
+
+async function runJobMeshes(jobId, assetIDs, creatorID, isGroup, apiKey) {
+    const jobInfo = jobs[jobId];
+    if (!jobInfo) {
+        throw new Error(`No job info found for jobId ${jobId}`);
+    }
+
+    try {
+        console.log(`[runJobMeshes] Starting job ${jobId} with ${assetIDs.length} meshes.`);
+        prepareOutputDir(outputDir);
+
+        jobInfo.failures = [];
+        jobInfo.results = [];
+        jobInfo.total = assetIDs.length;
+        jobInfo.done = 0;
+        jobInfo.message = "Starting downloads...";
+
+        const downloaded = [];
+        let downloadedCount = 0;
+        for (const rbxAssetIdStr of assetIDs) {
+            downloadedCount++;
+            const match = rbxAssetIdStr.match(/\d+/);
+            if (!match) {
+                jobInfo.failures.push({
+                    assetId: rbxAssetIdStr,
+                    stage: "download",
+                    error: "Could not parse numeric ID"
+                });
+                jobInfo.done = downloadedCount;
+                jobInfo.message = `Download parse fail: ${rbxAssetIdStr}`;
+                continue;
+            }
+
+            const numericId = match[0];
+            const fileName = `asset_${numericId}.rbxmesh`;
+            const filePath = path.join(outputDir, fileName);
+
+            try {
+                await downloadAssetLegacyWithRetries(numericId, filePath);
+                downloaded.push({ filePath, oldId: rbxAssetIdStr });
+                jobInfo.message = `${downloadedCount}/${assetIDs.length} downloaded`;
+            } catch (err) {
+                console.error(`[runJobMeshes] Download error for ${rbxAssetIdStr}:`, err);
+                jobInfo.failures.push({
+                    assetId: rbxAssetIdStr,
+                    stage: "download",
+                    error: err.message
+                });
+                jobInfo.message = `Download failed: ${rbxAssetIdStr}`;
+            }
+            jobInfo.done = downloadedCount;
+        }
+
+        jobInfo.done = 0;
+        const totalToUpload = downloaded.length;
+        let uploadedCount = 0;
+        jobInfo.message = "Starting mesh uploads...";
+
+        let cookie = getCookieFromRustCLI();
+        if (!cookie) {
+            throw new Error("Mesh upload: .ROBLOSECURITY cookie not found.");
+        }
+
+        for (let i = 0; i < downloaded.length; i += 60) {
+            const slice = downloaded.slice(i, i + 60);
+
+            const newlyCreated = [];
+            for (const item of slice) {
+                uploadedCount++;
+                try {
+                    jobInfo.message = `${uploadedCount}/${totalToUpload} uploading mesh...`;
+                    const newAssetId = await uploadMesh(item.filePath, cookie, creatorID, isGroup);
+                    newlyCreated.push({
+                        oldId: item.oldId,
+                        newId: newAssetId
+                    });
+                } catch (err) {
+                    console.error(`[runJobMeshes] Upload error for ${item.oldId}:`, err);
+                    jobInfo.failures.push({
+                        assetId: item.oldId,
+                        stage: "upload",
+                        error: err.message
+                    });
+                    jobInfo.message = `Upload failed: ${item.oldId}`;
+                    jobInfo.done = uploadedCount;
+                    continue;
+                }
+                jobInfo.done = uploadedCount;
+                jobInfo.message = `${uploadedCount}/${totalToUpload} uploaded (mesh)`;
+            }
+
+            newlyCreated.forEach(entry => {
+                jobInfo.results.push({
+                    oldId: entry.oldId,
+                    newId: `rbxassetid://${entry.newId}`
+                });
+            });
+
+            if (i + 60 < downloaded.length) {
+                jobInfo.message = "Waiting...";
+                console.log("[runJobMeshes] Upload batch done. Sleeping 60s...");
+                await sleep(60_000);
+            }
+        }
+
+        let finalMsg = `${jobInfo.results.length} mesh(es) reuploaded.`;
+        jobInfo.message = finalMsg;
+        jobInfo.finished = true;
+
+        console.log(`[runJobMeshes] Job ${jobId} complete.
+  Approved: ${jobInfo.results.length},
+  Failures: ${jobInfo.failures.length}`);
+
+    } catch (err) {
+        console.error(`[runJobMeshes] Fatal error in job ${jobId}:`, err);
+        jobInfo.message = `Fatal error: ${err.message}`;
+        jobInfo.finished = true;
+    }
+}
+
 function handleUpload(req, res, body) {
     let payload;
     try {
@@ -642,27 +790,27 @@ function handleUpload(req, res, body) {
         return res.end(JSON.stringify({ error: "Invalid JSON payload" }));
     }
 
-    const { assetIDs, creatorID, isGroup, apiKey, uploadAnimations, cookie } = payload || {};
+    const { assetIDs, creatorID, isGroup, apiKey, uploadType, cookie } = payload || {};
     console.log("[handleUpload] Received payload:", {
         assetIDs,
         creatorID,
         isGroup,
         apiKeyLength: apiKey?.length,
-        uploadAnimations,
+        uploadType
     });
 
-    if (!Array.isArray(assetIDs) || !creatorID) {
+    if (!Array.isArray(assetIDs) || !creatorID || !uploadType) {
         console.error("[handleUpload] Missing required fields.");
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({
-            error: "Missing required fields (assetIDs, creatorID)"
+            error: "Missing required fields (assetIDs, creatorID, uploadType)"
         }));
     }
-    if (!uploadAnimations && !apiKey) {
-        console.error("[handleUpload] Missing apiKey for images.");
+    if ((uploadType === "Images" || uploadType === "Meshes") && !apiKey) {
+        console.error("[handleUpload] Missing apiKey for images/meshes.");
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({
-            error: "Missing 'apiKey' (required for images)."
+            error: "Missing 'apiKey' (required for Images or Meshes)."
         }));
     }
 
@@ -681,20 +829,31 @@ function handleUpload(req, res, body) {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ jobId }));
 
-    if (uploadAnimations) {
+    if (uploadType === "Animations") {
         runJobAnimations(jobId, assetIDs, creatorID, !!isGroup, apiKey || "", cookie || "")
             .catch((err) => {
                 console.error(`[handleUpload] Fatal animation job error:`, err);
                 jobs[jobId].message = `Fatal: ${err.message}`;
                 jobs[jobId].finished = true;
             });
-    } else {
+    } else if (uploadType === "Images") {
         runJobImages(jobId, assetIDs, creatorID, !!isGroup, apiKey)
             .catch((err) => {
                 console.error(`[handleUpload] Fatal image job error:`, err);
                 jobs[jobId].message = `Fatal: ${err.message}`;
                 jobs[jobId].finished = true;
             });
+    } else if (uploadType === "Meshes") {
+        runJobMeshes(jobId, assetIDs, creatorID, !!isGroup, apiKey)
+            .catch((err) => {
+                console.error(`[handleUpload] Fatal mesh job error:`, err);
+                jobs[jobId].message = `Fatal: ${err.message}`;
+                jobs[jobId].finished = true;
+            });
+    } else {
+        console.warn(`[handleUpload] Unsupported uploadType: ${uploadType}`);
+        jobs[jobId].message = `Error: Unsupported uploadType ${uploadType}`;
+        jobs[jobId].finished = true;
     }
 }
 
@@ -784,7 +943,6 @@ function handleModerated(req, res, urlObj) {
         hasMore
     }));
 }
-
 
 const server = http.createServer((req, res) => {
     const urlObj = new URL(req.url, `http://${req.headers.host}`);
