@@ -138,9 +138,10 @@ async function downloadAssetLegacy(assetId, outputPath) {
     return new Promise((resolve, reject) => {
         console.log(`[downloadAssetLegacy] assetId=${assetId} -> ${outputPath}`);
         const url = `https://assetdelivery.roblox.com/v1/asset/?id=${assetId}`;
+        const cookie = getCookieFromRustCLI();
         const fileStream = fs.createWriteStream(outputPath);
 
-        https.get(url, (res) => {
+        https.get(url, { headers: { "Cookie": cookie } }, (res) => {
             console.log(`[downloadAssetLegacy] Response for assetId ${assetId}: ${res.statusCode}`);
             if (res.statusCode !== 200) {
                 fileStream.close();
@@ -367,8 +368,8 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
 
         for (let i = 0; i < downloaded.length; i += 60) {
             const slice = downloaded.slice(i, i + 60);
-
             const newlyCreated = [];
+
             for (const item of slice) {
                 uploadedCount++;
                 const filePath = path.join(outputDir, item.fileName);
@@ -411,45 +412,31 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
                 jobInfo.message = `${uploadedCount}/${totalToUpload} uploaded`;
             }
 
-            let moderationCount = 0;
-            for (let mIndex = 0; mIndex < newlyCreated.length; mIndex++) {
-                const entry = newlyCreated[mIndex];
+            // updated moderation handling
+            for (const entry of newlyCreated) {
                 let moderationState = null;
 
                 if (entry.rawModeration && entry.rawModeration.moderationState) {
                     moderationState = entry.rawModeration.moderationState;
                 } else {
                     try {
-                        moderationCount++;
                         const modData = await getAssetModeration(entry.newId, apiKey);
-                        moderationState = modData?.moderationState;
-
-                        if (moderationCount % 60 === 0 && mIndex + 1 < newlyCreated.length) {
-                            jobInfo.message = "Waiting...";
-                            console.log("[runJobImages] Moderation check batch 60 done, sleeping 60s...");
-                            await sleep(60_000);
-                        }
-                    } catch (err) {
-                        console.error(`[runJobImages] Moderation GET error for asset ${entry.newId}:`, err);
-                        jobInfo.failures.push({
-                            assetId: entry.oldId,
-                            stage: "moderationCheck",
-                            error: err.message
-                        });
+                        moderationState = modData?.moderationState ?? null;
+                    } catch {
                         moderationState = "Unknown";
                     }
                 }
 
-                if (moderationState === "Approved") {
-                    jobInfo.results.push({
-                        oldId: entry.oldId,
-                        newId: `rbxassetid://${entry.newId}`
-                    });
-                } else {
+                if (moderationState && moderationState !== "Approved") {
                     jobInfo.moderated.push({
                         oldId: entry.oldId,
                         newId: `rbxassetid://${entry.newId}`,
-                        state: moderationState || "NoInfo"
+                        state: moderationState
+                    });
+                } else {
+                    jobInfo.results.push({
+                        oldId: entry.oldId,
+                        newId: `rbxassetid://${entry.newId}`
                     });
                 }
             }
@@ -472,7 +459,6 @@ async function runJobImages(jobId, assetIDs, creatorID, isGroup, apiKey) {
           Approved: ${jobInfo.results.length},
           Moderated: ${jobInfo.moderated.length},
           Failures: ${jobInfo.failures.length}`);
-
     } catch (err) {
         console.error(`[runJobImages] Fatal error in job ${jobId}:`, err);
         jobs[jobId].message = `Fatal error: ${err.message}`;
