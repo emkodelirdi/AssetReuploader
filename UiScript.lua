@@ -805,7 +805,13 @@ local function CreateFusionUi(widget)
 	Fusion.Hydrate(GroupDisplayLabel){
 		Text = Fusion.Computed(function()
 			local selectedGroup = SelectedGroup:get()
-			return selectedGroup.Name
+			
+			--changechange
+			if selectedGroup then
+				return selectedGroup.Name
+			else
+				return ""
+			end
 		end),
 		TextTransparency = Fusion.Computed(function()
 			if NotRunning:get() then
@@ -818,7 +824,13 @@ local function CreateFusionUi(widget)
 	Fusion.Hydrate(GroupDisplayIcon){
 		Image = Fusion.Computed(function()
 			local selectedGroup = SelectedGroup:get()
-			return selectedGroup.EmblemUrl
+
+			--changechange
+			if selectedGroup then
+				return selectedGroup.EmblemUrl
+			else
+				return ""
+			end
 		end),
 		ImageTransparency = Fusion.Computed(function()
 			if NotRunning:get() then
